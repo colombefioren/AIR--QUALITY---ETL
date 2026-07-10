@@ -22,14 +22,14 @@ class Settings:
 
     DATA_DIR = Path("data")
     RAW_DIR = DATA_DIR / "raw"
-    CLEAN_DIR = DATA_DIR / "clean"
+    PROCESSED_DIR = DATA_DIR / "processed"
     STAR_SCHEMA_DIR = DATA_DIR / "star_schema"
 
     HISTORICAL_DIR = RAW_DIR / "historical"
     FORECAST_DIR = RAW_DIR / "forecast"
     TODAY_HOURLY_DIR = RAW_DIR / "today_hourly"
 
-    DAILY_COMBINED_PATH = CLEAN_DIR / "daily_air_quality_combined.csv"
+    DAILY_COMBINED_PATH = PROCESSED_DIR / "daily_air_quality_combined.csv"
 
     CITY_CSV_PATH = STAR_SCHEMA_DIR / "dim_city.csv"
     DATE_CSV_PATH = STAR_SCHEMA_DIR / "dim_date.csv"
@@ -67,7 +67,7 @@ class Settings:
         directories = [
             cls.DATA_DIR,
             cls.RAW_DIR,
-            cls.CLEAN_DIR,
+            cls.PROCESSED_DIR,
             cls.STAR_SCHEMA_DIR,
             cls.HISTORICAL_DIR,
             cls.FORECAST_DIR,
