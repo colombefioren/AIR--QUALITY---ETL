@@ -4,6 +4,9 @@ version = "0.1.0"
 description = "Air quality data ETL using Visual Crossing API"
 readme = "README.md"
 requires-python = ">=3.14"
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
 dependencies = [
     "apache-airflow>=3.3.0",
     "pandas>=3.0.3",
