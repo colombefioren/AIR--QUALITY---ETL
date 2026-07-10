@@ -6,25 +6,15 @@ logger = logging.getLogger(__name__)
 class DataValidator:
 
     RANGES = {
-        "temp": (-50, 60),
-        "tempmax": (-50, 60),
-        "tempmin": (-50, 60),
-        "feelslike": (-50, 60),
-        "dew": (-50, 40),
-        "humidity": (0, 100),
-        "precip": (0, 500),
-        "precipprob": (0, 100),
-        "precipcover": (0, 100),
-        "windgust": (0, 200),
-        "windspeed": (0, 200),
-        "winddir": (0, 360),
-        "pressure": (800, 1100),
-        "cloudcover": (0, 100),
-        "visibility": (0, 50),
-        "uvindex": (0, 20),
-        "latitude": (-90, 90),
-        "longitude": (-180, 180),
-        "elevation_m": (-500, 9000),
+        "pm2.5": (0, 500),
+        "pm10": (0, 500),
+        "no2": (0, 1000),
+        "o3": (0, 500),
+        "co": (0, 50000),
+        "so2": (0, 1000),
+        "aqi": (0, 500),
+        "us-epa-index": (0, 6),
+        "gb-defra-index": (0, 10),
     }
 
     @staticmethod

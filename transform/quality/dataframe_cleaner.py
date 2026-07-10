@@ -34,7 +34,7 @@ class DataFrameCleaner:
         return df.dropna(subset=subset, how=how)
 
     @staticmethod
-    def clean_weather_data(df):
+    def clean_air_quality_data(df):
         if df.empty:
             return df
 
@@ -44,9 +44,6 @@ class DataFrameCleaner:
         numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
         if numeric_cols:
             df = DataFrameCleaner.fill_numeric_nulls(df, numeric_cols)
-
-        if "preciptype" in df.columns:
-            df["preciptype"] = df["preciptype"].fillna("none")
 
         df = DataFrameCleaner.fill_categorical_nulls(df)
 
