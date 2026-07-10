@@ -33,8 +33,8 @@ class Settings:
 
     CITY_CSV_PATH = STAR_SCHEMA_DIR / "dim_city.csv"
     DATE_CSV_PATH = STAR_SCHEMA_DIR / "dim_date.csv"
-    AIR_QUALITY_FACT_PATH = STAR_SCHEMA_DIR / "fact_air_quality.csv"
-    AIR_QUALITY_TODAY_FACT_PATH = STAR_SCHEMA_DIR / "fact_air_quality_today.csv"
+    AQI_FACT_PATH = STAR_SCHEMA_DIR / "fact_aqi.csv"
+    AQI_TODAY_FACT_PATH = STAR_SCHEMA_DIR / "fact_aqi_today.csv"
 
     @classmethod
     def get_database_url(cls):

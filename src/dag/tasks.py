@@ -124,16 +124,16 @@ def transform_facts():
     csv_loader.save_processed_data(all_daily, Settings.DAILY_COMBINED_PATH)
     logger.info(f"Combined daily data: {len(all_daily)} records")
 
-    fact_air_quality = AirQualityTransformer.create_fact_air_quality(all_daily, dim_city)
-    DataValidator.validate(fact_air_quality, "Fact Air Quality")
+    fact_aqi = AirQualityTransformer.create_fact_aqi(all_daily, dim_city)
+    DataValidator.validate(fact_aqi, "Fact AQI")
 
-    fact_air_quality_today = AirQualityTransformer.create_fact_air_quality_today(hourly_clean, dim_city)
-    DataValidator.validate(fact_air_quality_today, "Fact Air Quality Today")
+    fact_aqi_today = AirQualityTransformer.create_fact_aqi_today(hourly_clean, dim_city)
+    DataValidator.validate(fact_aqi_today, "Fact AQI Today")
 
     dim_date = pd.read_csv(Settings.DATE_CSV_PATH)
-    csv_loader.save_star_schema(dim_date, dim_city, fact_air_quality, fact_air_quality_today)
-    logger.info(f"Saved fact_air_quality ({len(fact_air_quality)} records) and "
-                f"fact_air_quality_today ({len(fact_air_quality_today)} records)")
+    csv_loader.save_star_schema(dim_date, dim_city, fact_aqi, fact_aqi_today)
+    logger.info(f"Saved fact_aqi ({len(fact_aqi)} records) and "
+                f"fact_aqi_today ({len(fact_aqi_today)} records)")
 
 
 def save_postgres():
@@ -146,8 +146,8 @@ def save_postgres():
     tables = {
         "dim_date": Settings.DATE_CSV_PATH,
         "dim_city": Settings.CITY_CSV_PATH,
-        "fact_air_quality": Settings.AIR_QUALITY_FACT_PATH,
-        "fact_air_quality_today": Settings.AIR_QUALITY_TODAY_FACT_PATH,
+        "fact_aqi": Settings.AQI_FACT_PATH,
+        "fact_aqi_today": Settings.AQI_TODAY_FACT_PATH,
     }
 
     for table_name, csv_path in tables.items():

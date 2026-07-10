@@ -40,14 +40,14 @@ class CsvLoader:
         DataValidator.validate(df, "processed_daily")
         CsvLoader._save(df, file_path)
 
-    def save_star_schema(self, dim_date, dim_city, fact_air_quality, fact_air_quality_today):
+    def save_star_schema(self, dim_date, dim_city, fact_aqi, fact_aqi_today):
         logger.info("Saving star schema tables to CSV")
 
         tables = {
             "dim_date": dim_date,
             "dim_city": dim_city,
-            "fact_air_quality": fact_air_quality,
-            "fact_air_quality_today": fact_air_quality_today,
+            "fact_aqi": fact_aqi,
+            "fact_aqi_today": fact_aqi_today,
         }
 
         for table_name, df in tables.items():

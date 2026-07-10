@@ -122,20 +122,20 @@ def main():
             raise
 
         try:
-            fact_air_quality = AirQualityTransformer.create_fact_air_quality(all_daily, dim_city)
-            data_auditor.audit_dataframe(fact_air_quality, "Fact Air Quality")
-            DataValidator.validate(fact_air_quality, "Fact Air Quality")
+            fact_aqi = AirQualityTransformer.create_fact_aqi(all_daily, dim_city)
+            data_auditor.audit_dataframe(fact_aqi, "Fact AQI")
+            DataValidator.validate(fact_aqi, "Fact AQI")
 
-            fact_air_quality_today = AirQualityTransformer.create_fact_air_quality_today(today_hourly_data, dim_city)
-            data_auditor.audit_dataframe(fact_air_quality_today, "Fact Air Quality Today")
-            DataValidator.validate(fact_air_quality_today, "Fact Air Quality Today")
+            fact_aqi_today = AirQualityTransformer.create_fact_aqi_today(today_hourly_data, dim_city)
+            data_auditor.audit_dataframe(fact_aqi_today, "Fact AQI Today")
+            DataValidator.validate(fact_aqi_today, "Fact AQI Today")
         except Exception as e:
             logger.error(f"Failed to build star schema: {str(e)}")
             raise
 
         try:
-            csv_loader.save_star_schema(dim_date, dim_city, fact_air_quality, fact_air_quality_today)
-            pg_loader.save_star_schema(dim_date, dim_city, fact_air_quality, fact_air_quality_today, schema=Settings.POSTGRES_SCHEMA)
+            csv_loader.save_star_schema(dim_date, dim_city, fact_aqi, fact_aqi_today)
+            pg_loader.save_star_schema(dim_date, dim_city, fact_aqi, fact_aqi_today, schema=Settings.POSTGRES_SCHEMA)
         except Exception as e:
             logger.error(f"Failed to load star schema to CSV or Postgres: {str(e)}")
             raise
