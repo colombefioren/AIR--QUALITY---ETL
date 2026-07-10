@@ -15,10 +15,10 @@ def validate_settings():
 
 def extract_historical(city_name):
     from config.settings import Settings
-    from src.extract.weather_extractor import WeatherExtractor
+    from src.extract.air_quality_extractor import AirQualityExtractor
     from src.load.csv import CsvLoader
 
-    extractor = WeatherExtractor(
+    extractor = AirQualityExtractor(
         api_key=Settings.VISUAL_CROSSING_API_KEY,
         base_url=Settings.VISUAL_CROSSING_BASE_URL,
     )
@@ -37,10 +37,10 @@ def extract_historical(city_name):
 
 def extract_forecast(city_name):
     from config.settings import Settings
-    from src.extract.weather_extractor import WeatherExtractor
+    from src.extract.air_quality_extractor import AirQualityExtractor
     from src.load.csv import CsvLoader
 
-    extractor = WeatherExtractor(
+    extractor = AirQualityExtractor(
         api_key=Settings.VISUAL_CROSSING_API_KEY,
         base_url=Settings.VISUAL_CROSSING_BASE_URL,
     )
@@ -59,10 +59,10 @@ def extract_forecast(city_name):
 
 def extract_today_hourly(city_name):
     from config.settings import Settings
-    from src.extract.weather_extractor import WeatherExtractor
+    from src.extract.air_quality_extractor import AirQualityExtractor
     from src.load.csv import CsvLoader
 
-    extractor = WeatherExtractor(
+    extractor = AirQualityExtractor(
         api_key=Settings.VISUAL_CROSSING_API_KEY,
         base_url=Settings.VISUAL_CROSSING_BASE_URL,
     )

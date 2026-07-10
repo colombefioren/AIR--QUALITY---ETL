@@ -79,7 +79,7 @@ class DataAuditor:
 
         return {
             "duplicate_count": int(duplicate_count),
-            "duplicate_percentage": (duplicate_count / len(df)) * 100,
+            "duplicate_percentage": ((duplicate_count / len(df)) * 100) if len(df) > 0 else 0.0,
         }
 
     def _audit_data_types(self, df):
@@ -122,7 +122,7 @@ class DataAuditor:
         return stats
 
     def _audit_categorical(self, df):
-        categorical_cols = df.select_dtypes(include=["object"]).columns
+        categorical_cols = df.select_dtypes(include=["object", "str"]).columns
 
         if len(categorical_cols) == 0:
             return {}

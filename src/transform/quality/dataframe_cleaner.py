@@ -21,7 +21,7 @@ class DataFrameCleaner:
 
     @staticmethod
     def fill_categorical_nulls(df, fill_value="unknown"):
-        for col in df.select_dtypes(include=["object"]).columns:
+        for col in df.select_dtypes(include=["object", "str"]).columns:
             df[col] = df[col].fillna(fill_value)
         return df
 

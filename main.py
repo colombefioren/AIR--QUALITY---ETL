@@ -5,7 +5,7 @@ import pandas as pd
 from config.settings import Settings
 from config.logging import setup_logging
 from src.extract.city_extractor import CityExtractor
-from src.extract.weather_extractor import WeatherExtractor
+from src.extract.air_quality_extractor import AirQualityExtractor
 from src.transform.quality.data_auditor import DataAuditor
 from src.transform.quality.dataframe_cleaner import DataFrameCleaner
 from src.transform.quality.data_validator import DataValidator
@@ -26,7 +26,7 @@ def main():
         Settings.ensure_directories()
 
         city_extractor = CityExtractor(Settings.CITY_CSV_PATH)
-        weather_extractor = WeatherExtractor(
+        air_quality_extractor = AirQualityExtractor(
             api_key=Settings.VISUAL_CROSSING_API_KEY,
             base_url=Settings.VISUAL_CROSSING_BASE_URL,
         )
@@ -66,7 +66,7 @@ def main():
 
             try:
                 logger.info(f"Extracting historical data for {city_name}...")
-                historical_df = weather_extractor.extract_historical(city_name)
+                historical_df = air_quality_extractor.extract_historical(city_name)
                 if not historical_df.empty:
                     historical_data.append(historical_df)
                     csv_loader.save_raw_air_quality_data(historical_df, city_name, "historical")
@@ -76,7 +76,7 @@ def main():
 
             try:
                 logger.info(f"Extracting forecast data for {city_name}...")
-                forecast_df = weather_extractor.extract_forecast(city_name)
+                forecast_df = air_quality_extractor.extract_forecast(city_name)
                 if not forecast_df.empty:
                     forecast_data.append(forecast_df)
                     csv_loader.save_raw_air_quality_data(forecast_df, city_name, "forecast")
@@ -86,7 +86,7 @@ def main():
 
             try:
                 logger.info(f"Extracting hourly data for {city_name}...")
-                hourly_df = weather_extractor.extract_today_hourly(city_name)
+                hourly_df = air_quality_extractor.extract_today_hourly(city_name)
                 if not hourly_df.empty:
                     today_hourly_data.append(hourly_df)
                     csv_loader.save_raw_air_quality_data(hourly_df, city_name, "today_hourly")

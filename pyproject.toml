@@ -8,6 +8,7 @@ dependencies = [
     "apache-airflow>=3.3.0",
     "pandas>=3.0.3",
     "psycopg2-binary>=2.9.12",
+    "pytest>=9.1.1",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
 ]
