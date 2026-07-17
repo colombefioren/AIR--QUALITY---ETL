@@ -22,36 +22,54 @@ def test_openweather_base_url():
 
 
 def test_get_database_url():
-    with patch.object(Settings, "POSTGRES_HOST", "localhost"):
-        with patch.object(Settings, "POSTGRES_PORT", "5432"):
-            with patch.object(Settings, "POSTGRES_DB", "air_quality"):
-                with patch.object(Settings, "POSTGRES_USER", "user"):
-                    with patch.object(Settings, "POSTGRES_PASSWORD", "pass"):
-                        url = Settings.get_database_url()
-                        assert url == "postgresql://user:pass@localhost:5432/air_quality"
+    with patch.object(Settings, "DATABASE_URL", None), \
+         patch.object(Settings, "POSTGRES_HOST", "localhost"), \
+         patch.object(Settings, "POSTGRES_PORT", "5432"), \
+         patch.object(Settings, "POSTGRES_DB", "air_quality"), \
+         patch.object(Settings, "POSTGRES_USER", "user"), \
+         patch.object(Settings, "POSTGRES_PASSWORD", "pass"):
+        url = Settings.get_database_url()
+        assert url == "postgresql://user:pass@localhost:5432/air_quality"
+
+
+def test_get_database_url_uses_env_var():
+    with patch.object(Settings, "DATABASE_URL", "postgresql://custom:url@host/db?sslmode=require"):
+        url = Settings.get_database_url()
+        assert url == "postgresql://custom:url@host/db?sslmode=require"
 
 
 def test_validate_missing_api_key():
-    with patch.object(Settings, "OPENWEATHER_API_KEY", None):
+    with patch.object(Settings, "DATABASE_URL", None), \
+         patch.object(Settings, "OPENWEATHER_API_KEY", None):
         with pytest.raises(ValueError, match="OPENWEATHER_API_KEY"):
             Settings.validate()
 
 
 def test_validate_missing_postgres_vars():
-    with patch.object(Settings, "OPENWEATHER_API_KEY", "test-key"):
-        with patch.object(Settings, "POSTGRES_PORT", None):
-            with patch.object(Settings, "POSTGRES_DB", None):
-                with pytest.raises(ValueError, match="POSTGRES"):
-                    Settings.validate()
+    with patch.object(Settings, "DATABASE_URL", None), \
+         patch.object(Settings, "OPENWEATHER_API_KEY", "test-key"), \
+         patch.object(Settings, "POSTGRES_PORT", None), \
+         patch.object(Settings, "POSTGRES_DB", None):
+        with pytest.raises(ValueError, match="POSTGRES"):
+            Settings.validate()
 
 
 def test_validate_success():
-    with patch.object(Settings, "OPENWEATHER_API_KEY", "test-key"):
-        with patch.object(Settings, "POSTGRES_PORT", "5432"):
-            with patch.object(Settings, "POSTGRES_DB", "test_db"):
-                with patch.object(Settings, "POSTGRES_USER", "test_user"):
-                    with patch.object(Settings, "POSTGRES_PASSWORD", "test_pass"):
-                        Settings.validate()
+    with patch.object(Settings, "DATABASE_URL", None), \
+         patch.object(Settings, "OPENWEATHER_API_KEY", "test-key"), \
+         patch.object(Settings, "POSTGRES_PORT", "5432"), \
+         patch.object(Settings, "POSTGRES_DB", "test_db"), \
+         patch.object(Settings, "POSTGRES_USER", "test_user"), \
+         patch.object(Settings, "POSTGRES_PASSWORD", "test_pass"):
+        Settings.validate()
+
+
+def test_validate_with_database_url_skips_pg_vars():
+    with patch.object(Settings, "DATABASE_URL", "postgresql://user:pass@host/db"), \
+         patch.object(Settings, "OPENWEATHER_API_KEY", "test-key"), \
+         patch.object(Settings, "POSTGRES_PORT", None), \
+         patch.object(Settings, "POSTGRES_DB", None):
+        Settings.validate()
 
 
 def test_ensure_directories_creates_paths(tmp_path):

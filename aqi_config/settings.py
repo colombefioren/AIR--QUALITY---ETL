@@ -13,6 +13,8 @@ class Settings:
     OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY")
     OPENWEATHER_BASE_URL = "http://api.openweathermap.org/data/2.5/air_pollution"
 
+    DATABASE_URL = os.getenv("DATABASE_URL")
+
     POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
     POSTGRES_PORT = os.getenv("POSTGRES_PORT")
     POSTGRES_DB = os.getenv("POSTGRES_DB")
@@ -36,6 +38,8 @@ class Settings:
 
     @classmethod
     def get_database_url(cls):
+        if cls.DATABASE_URL:
+            return cls.DATABASE_URL
         return (
             f"postgresql://{cls.POSTGRES_USER}:{cls.POSTGRES_PASSWORD}"
             f"@{cls.POSTGRES_HOST}:{cls.POSTGRES_PORT}/{cls.POSTGRES_DB}"
@@ -47,6 +51,9 @@ class Settings:
             error_msg = "OPENWEATHER_API_KEY is not set in environment variables"
             logger.error(error_msg)
             raise ValueError(error_msg)
+        if cls.DATABASE_URL:
+            logger.info("Configuration validated successfully")
+            return
         pg_vars = {
             "POSTGRES_PORT": cls.POSTGRES_PORT,
             "POSTGRES_DB": cls.POSTGRES_DB,
