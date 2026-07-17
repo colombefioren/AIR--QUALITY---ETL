@@ -4,12 +4,12 @@ from pathlib import Path
 import pandas as pd
 
 from config.settings import Settings
-from src.extract.aqi_extractor import CITIES
+from src.extract.city_extractor import get_city_coords
 from src.transform.quality.data_validator import DataValidator
 
 
 def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
-    coords = CITIES[city_name]
+    coords = get_city_coords(city_name)
     rows = []
     for entry in raw_list:
         dt = datetime.fromtimestamp(entry["dt"])
@@ -53,3 +53,26 @@ def rebuild_clean_from_raw(
 
     DataValidator.validate(combined, name="hourly_aqi_combined")
     return clean_path
+
+
+def build_fact_aqi(clean_df: pd.DataFrame, dim_city: pd.DataFrame, dim_date: pd.DataFrame) -> pd.DataFrame:
+    city_key_map = dim_city.set_index("city_name")["city_key"].to_dict()
+    date_key_map = dim_date.set_index(["full_date", "hour"])["date_key"].to_dict()
+
+    df = clean_df.copy()
+    df["city_key"] = df["city_name"].map(city_key_map)
+    df["date_key"] = df.apply(
+        lambda row: date_key_map.get((str(row["date"]), int(row["hour"])), None), axis=1
+    )
+
+    df = df.dropna(subset=["city_key", "date_key"])
+    df["city_key"] = df["city_key"].astype(int)
+    df["date_key"] = df["date_key"].astype(int)
+
+    fact_cols = [
+        "city_key", "date_key",
+        "aqi", "co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3",
+    ]
+    df = df[fact_cols]
+    DataValidator.validate(df, name="fact_aqi")
+    return df

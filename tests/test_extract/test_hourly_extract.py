@@ -3,14 +3,38 @@ from unittest.mock import patch
 import pytest
 import requests
 
-from src.extract.aqi_extractor import CITIES, extract_hourly
+from src.extract.aqi_extractor import extract_hourly
+from src.extract.city_extractor import CITIES, get_city_coords, get_city_names
 
 
-def test_cities_defined():
+def test_cities_count():
     assert len(CITIES) >= 6
-    for city, coords in CITIES.items():
-        assert "lat" in coords
-        assert "lon" in coords
+
+
+def test_cities_have_required_fields():
+    for city in CITIES:
+        assert "city_name" in city
+        assert "country" in city
+        assert "latitude" in city
+        assert "longitude" in city
+
+
+def test_get_city_coords_known():
+    coords = get_city_coords("Paris")
+    assert coords is not None
+    assert "lat" in coords
+    assert "lon" in coords
+
+
+def test_get_city_coords_unknown():
+    assert get_city_coords("Atlantis") is None
+
+
+def test_get_city_names():
+    names = get_city_names()
+    assert len(names) >= 6
+    assert "Paris" in names
+    assert "London" in names
 
 
 @patch("src.extract.aqi_extractor._request_with_retry")
