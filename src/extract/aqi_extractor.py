@@ -27,7 +27,7 @@ def extract_hourly(city_name: str) -> Optional[list[dict]]:
     coords = get_city_coords(city_name)
     if not coords:
         return None
-    url = f"{OPENWEATHER_BASE}/air_pollution"
+    url = Settings.OPENWEATHER_BASE_URL
     data = _request_with_retry(url, Settings.OPENWEATHER_API_KEY, params={
         "lat": coords["lat"],
         "lon": coords["lon"],
