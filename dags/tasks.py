@@ -1,4 +1,3 @@
-from config.logging import setup_logging
 from config.settings import Settings
 from src.extract.aqi_extractor import CITIES, extract_hourly
 from src.load.csv import save_raw_hourly
@@ -6,11 +5,13 @@ from src.transform.quality.dataframe_cleaner import DataFrameCleaner
 from src.transform.transformer.aqi import rebuild_clean_from_raw, transform_hourly_aqi
 
 
-def run_hourly_pipeline():
-    setup_logging()
+def validate_settings(**context):
     Settings.validate()
     Settings.ensure_directories()
+    return "settings_ok"
 
+
+def extract_hourly_task(**context):
     for city in CITIES:
         raw = extract_hourly(city)
         if not raw:
@@ -18,10 +19,13 @@ def run_hourly_pipeline():
         df = transform_hourly_aqi(raw, city)
         df = DataFrameCleaner.clean_aqi_data(df)
         save_raw_hourly(df, city, Settings.RAW_DIR)
+    return "extract_ok"
 
+
+def rebuild_clean_task(**context):
     rebuild_clean_from_raw()
-    print("Hourly pipeline complete.")
+    return "rebuild_ok"
 
 
-if __name__ == "__main__":
-    run_hourly_pipeline()
+def load_to_warehouse(**context):
+    return "load_ok"
