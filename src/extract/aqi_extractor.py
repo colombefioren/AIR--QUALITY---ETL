@@ -5,8 +5,6 @@ import requests
 
 from config.settings import Settings
 
-OPENWEATHER_BASE = "http://api.openweathermap.org/data/2.5"
-
 # TODO: replace with Dev 3's city_extractor on merge
 CITIES = {
     "Paris":        {"lat": 48.8566,  "lon": 2.3522},
@@ -38,7 +36,7 @@ def extract_hourly(city_name: str) -> Optional[list[dict]]:
     coords = CITIES.get(city_name)
     if not coords:
         return None
-    url = f"{OPENWEATHER_BASE}/air_pollution"
+    url = Settings.OPENWEATHER_BASE_URL
     data = _request_with_retry(url, Settings.OPENWEATHER_API_KEY, params={
         "lat": coords["lat"],
         "lon": coords["lon"],
