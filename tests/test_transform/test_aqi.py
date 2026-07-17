@@ -100,8 +100,22 @@ def test_build_fact_air_quality_returns_long_format():
     raw = _sample_raw()
     df = transform_hourly_aqi(raw, "Antananarivo")
     dim_city = _sample_dim_city()
-    dim_date = _sample_dim_date()
     dim_pollutant = _sample_dim_pollutant()
+
+    date_rows = []
+    for _, row in df.iterrows():
+        date_key = int(pd.Timestamp(row["datetime"]).strftime("%Y%m%d%H"))
+        date_rows.append({
+            "date_key": date_key,
+            "full_date": str(row["date"]),
+            "hour": int(row["hour"]),
+            "day_of_week": "Monday",
+            "is_weekend": False,
+            "month": int(pd.Timestamp(row["datetime"]).month),
+            "year": int(pd.Timestamp(row["datetime"]).year),
+            "season": "dry",
+        })
+    dim_date = pd.DataFrame(date_rows).drop_duplicates(subset=["date_key"])
 
     fact = build_fact_air_quality(df, dim_city, dim_date, dim_pollutant)
     assert isinstance(fact, pd.DataFrame)
