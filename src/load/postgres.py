@@ -170,14 +170,11 @@ class PostgresLoader:
         schema: str,
     ):
         logger.info("Saving star schema to PostgreSQL")
-
-        # 1. Ensure schema + tables exist
         engine = self._get_engine()
         with engine.begin() as conn:
             conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
         self._ensure_tables(schema)
 
-        # 2. Insert with ON CONFLICT DO NOTHING (idempotent)
         tables = {
             "dim_city": dim_city,
             "dim_date": dim_date,
@@ -193,16 +190,15 @@ class PostgresLoader:
             inserted = self._insert_with_conflict(df, table_name, schema)
             total += inserted
             logger.info(
-                "[Load] %s: %d lignes inserees (ignorees si existantes)",
+                "[Load] %s: %d rows inserted (skipped if existing)",
                 table_name,
                 inserted,
             )
 
-        # 3. Ensure FK constraints
         self._ensure_foreign_keys(schema)
 
         logger.info(
-            "[Load] Star schema sauvegarde: %d lignes totales dans %s",
+            "[Load] Star schema saved: %d total rows in %s",
             total,
             schema,
         )
