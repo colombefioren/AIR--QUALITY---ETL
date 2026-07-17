@@ -14,6 +14,15 @@ def save_raw_hourly(df: pd.DataFrame, city_name: str, raw_dir: Path) -> Path:
     return path
 
 
+def save_raw_backfill(df: pd.DataFrame, city_name: str, raw_dir: Path, year: int, month: int) -> Path:
+    backfill_dir = raw_dir / "backfill"
+    backfill_dir.mkdir(parents=True, exist_ok=True)
+    slug = city_name.lower().replace(" ", "_")
+    path = backfill_dir / f"{slug}_{year}-{month:02d}.csv"
+    df.to_csv(path, index=False)
+    return path
+
+
 def save_processed_data(df: pd.DataFrame, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     df.to_csv(path, index=False)
