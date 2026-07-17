@@ -22,7 +22,6 @@ def _save_star_schema():
     clean_df = pd.read_csv(Settings.HOURLY_COMBINED_PATH)
     dim_date = build_dim_date(clean_df)
     fact_aqi = build_fact_aqi(clean_df, dim_city, dim_date)
-    fact_aqi.to_csv(Settings.FACT_AQI_PATH, index=False)
     loader = PostgresLoader(Settings.get_database_url())
     loader.save_star_schema(dim_city, dim_date, fact_aqi, Settings.POSTGRES_SCHEMA)
 
@@ -79,4 +78,4 @@ def run_hourly_pipeline():
 
 
 if __name__ == "__main__":
-    run_backfill()
+    run_hourly_pipeline()

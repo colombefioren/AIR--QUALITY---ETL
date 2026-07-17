@@ -34,15 +34,6 @@ def rebuild_clean_task(**context):
     return "rebuild_ok"
 
 
-def prepare_dimensions(**context):
-    dim_city = load_cities()
-    clean_df = pd.read_csv(Settings.HOURLY_COMBINED_PATH)
-    dim_date = build_dim_date(clean_df)
-    fact_aqi = build_fact_aqi(clean_df, dim_city, dim_date)
-    fact_aqi.to_csv(Settings.FACT_AQI_PATH, index=False)
-    return "dimensions_ok"
-
-
 def extract_backfill_task(**context):
     end_date = datetime.now()
     start_date = end_date - timedelta(days=365)
@@ -59,9 +50,10 @@ def extract_backfill_task(**context):
 
 
 def load_to_warehouse(**context):
-    dim_city = pd.read_csv(Settings.CITY_CSV_PATH)
-    dim_date = pd.read_csv(Settings.DATE_CSV_PATH)
-    fact_aqi = pd.read_csv(Settings.FACT_AQI_PATH)
+    dim_city = load_cities()
+    clean_df = pd.read_csv(Settings.HOURLY_COMBINED_PATH)
+    dim_date = build_dim_date(clean_df)
+    fact_aqi = build_fact_aqi(clean_df, dim_city, dim_date)
     loader = PostgresLoader(Settings.get_database_url())
     loader.save_star_schema(dim_city, dim_date, fact_aqi, Settings.POSTGRES_SCHEMA)
     return "load_ok"

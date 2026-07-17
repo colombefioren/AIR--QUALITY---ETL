@@ -4,7 +4,6 @@ from airflow.operators.python import PythonOperator
 from dags.tasks import (
     extract_backfill_task,
     load_to_warehouse,
-    prepare_dimensions,
     rebuild_clean_task,
     validate_settings,
 )
@@ -28,13 +27,9 @@ with DAG(
         task_id="rebuild_clean",
         python_callable=rebuild_clean_task,
     )
-    t_dims = PythonOperator(
-        task_id="prepare_dimensions",
-        python_callable=prepare_dimensions,
-    )
     t_load = PythonOperator(
         task_id="load_to_warehouse",
         python_callable=load_to_warehouse,
     )
 
-    t_validate >> t_backfill >> t_rebuild >> t_dims >> t_load
+    t_validate >> t_backfill >> t_rebuild >> t_load

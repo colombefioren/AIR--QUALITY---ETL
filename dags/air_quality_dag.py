@@ -6,7 +6,6 @@ from airflow.providers.standard.operators.python import PythonOperator
 from dags.tasks import (
     extract_hourly_task,
     load_to_warehouse,
-    prepare_dimensions,
     rebuild_clean_task,
     validate_settings,
 )
@@ -43,9 +42,4 @@ with DAG(
         task_id="load_to_warehouse",
         python_callable=load_to_warehouse,
     )
-    t_dims = PythonOperator(
-        task_id="prepare_dimensions",
-        python_callable=prepare_dimensions,
-    )
-
-    t_validate >> t_extract >> t_rebuild >> t_dims >> t_load
+    t_validate >> t_extract >> t_rebuild >> t_load
