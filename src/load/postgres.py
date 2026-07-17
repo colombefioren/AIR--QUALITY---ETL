@@ -102,14 +102,11 @@ class PostgresLoader:
 
         total_inserted = 0
         chunk_count = (len(rows) + BATCH_SIZE - 1) // BATCH_SIZE
-        conflict_cols = UNIQUE_INDEXES[table_name][0]
 
         for chunk_idx, chunk_start in enumerate(range(0, len(rows), BATCH_SIZE)):
             chunk = rows[chunk_start : chunk_start + BATCH_SIZE]
             stmt = pg_insert(table).values(chunk)
-            stmt = stmt.on_conflict_do_nothing(
-                conflict_columns=[table.c[c] for c in conflict_cols]
-            )
+            stmt = stmt.on_conflict_do_nothing()
 
             with engine.begin() as connection:
                 result = connection.execute(stmt)
