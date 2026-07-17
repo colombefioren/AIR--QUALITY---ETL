@@ -1,3 +1,4 @@
+import logging
 import time
 from datetime import datetime, timedelta
 from typing import Optional
@@ -6,6 +7,8 @@ import requests
 
 from config.settings import Settings
 from src.cities import get_city_coords
+
+logger = logging.getLogger(__name__)
 
 OPENWEATHER_BASE = "http://api.openweathermap.org/data/2.5"
 
@@ -62,7 +65,10 @@ def extract_backfill(
         return None
 
     all_entries = []
-    for chunk_start, chunk_end in _month_chunks(start_date, end_date):
+    chunks = _month_chunks(start_date, end_date)
+    logger.info(f"[{city_name}] Backfill: {len(chunks)} month chunks to fetch")
+    for i, (chunk_start, chunk_end) in enumerate(chunks, 1):
+        logger.info(f"[{city_name}] Fetching chunk {i}/{len(chunks)}: {chunk_start.date()} → {chunk_end.date()}")
         url = Settings.OPENWEATHER_BASE_URL + "/history"
         data = _request_with_retry(url, Settings.OPENWEATHER_API_KEY, params={
             "lat": coords["lat"],
@@ -72,4 +78,8 @@ def extract_backfill(
         })
         if data and "list" in data:
             all_entries.extend(data["list"])
+            logger.info(f"[{city_name}] Chunk {i}/{len(chunks)}: got {len(data['list'])} entries")
+        else:
+            logger.warning(f"[{city_name}] Chunk {i}/{len(chunks)}: no data returned")
+    logger.info(f"[{city_name}] Backfill complete: {len(all_entries)} total entries")
     return all_entries if all_entries else None

@@ -9,7 +9,11 @@ from src.extract.aqi_extractor import extract_backfill, extract_hourly
 from src.load.csv import save_raw_backfill, save_raw_hourly
 from src.load.postgres import PostgresLoader
 from src.transform.quality.dataframe_cleaner import DataFrameCleaner
-from src.transform.transformer.aqi import build_fact_aqi, rebuild_clean_from_raw, transform_hourly_aqi
+from src.transform.transformer.aqi import (
+    build_fact_aqi,
+    rebuild_clean_from_raw,
+    transform_hourly_aqi,
+)
 from src.transform.transformer.dim_date import build_dim_date
 
 
@@ -24,6 +28,10 @@ def _save_star_schema():
 
 
 def run_backfill(months: int = 12):
+    import logging
+
+    logger = logging.getLogger(__name__)
+
     setup_logging()
     Settings.validate()
     Settings.ensure_directories()
@@ -31,19 +39,25 @@ def run_backfill(months: int = 12):
     end_date = datetime.now()
     start_date = end_date - timedelta(days=30 * months)
 
-    for city in get_city_names():
+    cities = get_city_names()
+    for i, city in enumerate(cities, 1):
+        logger.info(f"[{i}/{len(cities)}] Backfilling {city}...")
         raw = extract_backfill(city, start_date, end_date)
         if not raw:
+            logger.warning(f"[{i}/{len(cities)}] {city}: no data, skipping")
             continue
         df = transform_hourly_aqi(raw, city)
         df = DataFrameCleaner.clean_aqi_data(df)
         df["_dt"] = pd.to_datetime(df["datetime"])
-        for (year, month), group in df.groupby([df["_dt"].dt.year, df["_dt"].dt.month]):
+        month_groups = list(df.groupby([df["_dt"].dt.year, df["_dt"].dt.month]))
+        logger.info(f"[{i}/{len(cities)}] {city}: {len(month_groups)} months to save")
+        for (year, month), group in month_groups:
             save_raw_backfill(group, city, Settings.RAW_DIR, year, month)
+        logger.info(f"[{i}/{len(cities)}] {city}: done")
 
     rebuild_clean_from_raw()
     _save_star_schema()
-    print(f"Backfill complete ({months} months).")
+    logger.info(f"Backfill complete ({months} months).")
 
 
 def run_hourly_pipeline():
@@ -65,4 +79,4 @@ def run_hourly_pipeline():
 
 
 if __name__ == "__main__":
-    run_hourly_pipeline()
+    run_backfill()
