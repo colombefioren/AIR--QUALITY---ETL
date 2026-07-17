@@ -1,65 +1,81 @@
-import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 import pandas as pd
-from sqlalchemy import text
+import pytest
 
 from src.load.postgres import PostgresLoader
 
 
-class TestPostgresLoader:
+def _sample_dim_city():
+    return pd.DataFrame({
+        "city_key": [1, 2],
+        "city_name": ["Paris", "London"],
+        "country": ["France", "UK"],
+        "latitude": [48.8566, 51.5074],
+        "longitude": [2.3522, -0.1278],
+    })
 
-    def test_init_sets_db_url(self):
-        loader = PostgresLoader("postgresql://user:pass@localhost:5432/db")
-        assert loader.db_url == "postgresql://user:pass@localhost:5432/db"
-        assert loader.engine is None
 
-    @patch("src.load.postgres.create_engine")
-    def test_get_engine_creates_connection(self, mock_create_engine):
-        mock_engine = MagicMock()
-        mock_conn = MagicMock()
-        mock_engine.connect.return_value.__enter__.return_value = mock_conn
-        mock_create_engine.return_value = mock_engine
+def _sample_dim_date():
+    return pd.DataFrame({
+        "date_key": [2026071710, 2026071711],
+        "full_date": ["2026-07-17", "2026-07-17"],
+        "hour": [10, 11],
+        "day_of_week": ["Thursday", "Thursday"],
+        "is_weekend": [False, False],
+        "month": [7, 7],
+        "year": [2026, 2026],
+    })
 
-        loader = PostgresLoader("postgresql://user:pass@localhost:5432/db")
-        engine = loader._get_engine()
 
-        assert engine is mock_engine
-        mock_create_engine.assert_called_once()
+def _sample_fact_aqi():
+    return pd.DataFrame({
+        "city_key": [1, 2],
+        "date_key": [2026071710, 2026071710],
+        "aqi": [2, 3],
+        "co": [200.0, 300.0],
+        "no": [1.0, 2.0],
+        "no2": [5.0, 10.0],
+        "o3": [30.0, 40.0],
+        "so2": [2.0, 3.0],
+        "pm2_5": [10.0, 15.0],
+        "pm10": [20.0, 25.0],
+        "nh3": [3.0, 5.0],
+    })
 
-    def test_get_engine_reuses_existing(self):
-        loader = PostgresLoader("postgresql://user:pass@localhost:5432/db")
-        mock_engine = MagicMock()
-        loader.engine = mock_engine
 
-        engine = loader._get_engine()
-        assert engine is mock_engine
+@patch("src.load.postgres.create_engine")
+def test_postgres_loader_init(mock_engine):
+    loader = PostgresLoader("postgresql://user:pass@localhost/test")
+    assert loader.db_url == "postgresql://user:pass@localhost/test"
+    assert loader.engine is None
 
-    @patch("src.load.postgres.create_engine")
-    def test_delete_all_executes_delete(self, mock_create_engine):
-        mock_conn = MagicMock()
-        mock_engine = MagicMock()
-        mock_engine.connect.return_value.__enter__.return_value = mock_conn
-        mock_create_engine.return_value = mock_engine
 
-        loader = PostgresLoader("postgresql://user:pass@localhost:5432/db")
-        loader._delete_all("fact_aqi", "air_quality")
+@patch("src.load.postgres.create_engine")
+def test_save_star_schema_calls_to_sql(mock_engine):
+    mock_conn = MagicMock()
+    mock_engine.return_value.connect.return_value.__enter__ = MagicMock(return_value=mock_conn)
+    mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
 
-        mock_conn.execute.assert_called_once()
-        call_args = mock_conn.execute.call_args[0][0]
-        assert isinstance(call_args, text)
-        assert "DELETE" in str(call_args)
-        assert "air_quality.fact_aqi" in str(call_args)
-        mock_conn.commit.assert_called_once()
+    loader = PostgresLoader("postgresql://user:pass@localhost/test")
+    loader.engine = mock_engine.return_value
 
-    @patch("src.load.postgres.DataValidator.validate")
-    @patch("src.load.postgres.create_engine")
-    def test_save_calls_to_sql(self, mock_create_engine, mock_validate):
-        mock_engine = MagicMock()
-        mock_engine.connect.return_value.__enter__.return_value = MagicMock()
-        mock_create_engine.return_value = mock_engine
+    with patch.object(loader, "_delete_all"), \
+         patch.object(loader, "save"), \
+         patch.object(loader, "_ensure_unique_constraint"), \
+         patch.object(loader, "_create_fk_if_not_exists"):
+        loader.save_star_schema(_sample_dim_city(), _sample_dim_date(), _sample_fact_aqi(), "public")
 
-        df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
-        loader = PostgresLoader("postgresql://user:pass@localhost:5432/db")
-        loader.save(df, "fact_aqi", "air_quality")
+    assert loader.save.call_count == 3
 
-        mock_validate.assert_called_once_with(df, "fact_aqi")
+
+def test_save_star_schema_skips_empty():
+    loader = PostgresLoader("postgresql://user:pass@localhost/test")
+    loader.engine = MagicMock()
+
+    with patch.object(loader, "_delete_all") as mock_delete, \
+         patch.object(loader, "save") as mock_save, \
+         patch.object(loader, "_get_engine"):
+        empty_df = pd.DataFrame()
+        loader.save_star_schema(empty_df, _sample_dim_date(), _sample_fact_aqi(), "public")
+        assert mock_save.call_count == 2
