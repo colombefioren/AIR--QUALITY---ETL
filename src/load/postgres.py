@@ -1,11 +1,58 @@
 import logging
 
 import pandas as pd
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text, MetaData, Table as SATable
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from src.transform.quality.data_validator import DataValidator
 
 logger = logging.getLogger(__name__)
+
+BATCH_SIZE = 5000
+
+CREATE_TABLES_SQL = """
+CREATE TABLE IF NOT EXISTS {schema}.dim_city (
+    city_key    INTEGER PRIMARY KEY,
+    city_name   VARCHAR(100) NOT NULL,
+    country     VARCHAR(100),
+    latitude    DOUBLE PRECISION,
+    longitude   DOUBLE PRECISION
+);
+
+CREATE TABLE IF NOT EXISTS {schema}.dim_date (
+    date_key    INTEGER PRIMARY KEY,
+    full_date   DATE NOT NULL,
+    hour        INTEGER NOT NULL,
+    day_of_week VARCHAR(10),
+    is_weekend  BOOLEAN,
+    month       INTEGER,
+    year        INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS {schema}.fact_aqi (
+    fact_id     SERIAL PRIMARY KEY,
+    city_key    INTEGER NOT NULL,
+    date_key    INTEGER NOT NULL,
+    aqi         INTEGER,
+    co          DOUBLE PRECISION,
+    no          DOUBLE PRECISION,
+    no2         DOUBLE PRECISION,
+    o3          DOUBLE PRECISION,
+    so2         DOUBLE PRECISION,
+    pm2_5       DOUBLE PRECISION,
+    pm10        DOUBLE PRECISION,
+    nh3         DOUBLE PRECISION
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uq_fact_aqi_city_date
+    ON {schema}.fact_aqi (city_key, date_key);
+"""
+
+UNIQUE_INDEXES = {
+    "dim_city":  [["city_key"]],
+    "dim_date":  [["date_key"]],
+    "fact_aqi":  [["city_key", "date_key"]],
+}
 
 
 class PostgresLoader:
@@ -28,27 +75,56 @@ class PostgresLoader:
                 raise
         return self.engine
 
-    def _delete_all(self, table_name: str, schema: str):
-        full = f"{schema}.{table_name}" if schema else table_name
-        with self._get_engine().connect() as conn:
-            conn.execute(text(f"DELETE FROM {full}"))
-            conn.commit()
-        logger.debug(f"Cleared existing rows from {full}")
+    def _ensure_tables(self, schema: str):
+        engine = self._get_engine()
+        with engine.begin() as conn:
+            for statement in CREATE_TABLES_SQL.format(schema=schema).split(";"):
+                statement = statement.strip()
+                if statement:
+                    conn.execute(text(statement))
+        logger.info("Tables ensured in schema '%s'", schema)
 
-    def _ensure_unique_constraint(self, conn, schema: str, table: str, column: str):
-        constraint_name = f"uq_{table}_{column}"
-        sql = text(f"""
-            DO $$ BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM information_schema.table_constraints
-                    WHERE constraint_name = '{constraint_name}' AND table_schema = '{schema}'
-                ) THEN
-                    ALTER TABLE {schema}.{table}
-                    ADD CONSTRAINT {constraint_name} UNIQUE ({column});
-                END IF;
-            END $$;
-        """)
-        conn.execute(sql)
+    def _insert_with_conflict(
+        self,
+        df: pd.DataFrame,
+        table_name: str,
+        schema: str,
+    ) -> int:
+        engine = self._get_engine()
+        table = SATable(
+            table_name,
+            MetaData(schema=schema),
+            autoload_with=engine,
+        )
+        rows = df.to_dict(orient="records")
+        if not rows:
+            return 0
+
+        total_inserted = 0
+        chunk_count = (len(rows) + BATCH_SIZE - 1) // BATCH_SIZE
+        conflict_cols = UNIQUE_INDEXES[table_name][0]
+
+        for chunk_idx, chunk_start in enumerate(range(0, len(rows), BATCH_SIZE)):
+            chunk = rows[chunk_start : chunk_start + BATCH_SIZE]
+            stmt = pg_insert(table).values(chunk)
+            stmt = stmt.on_conflict_do_nothing(
+                conflict_columns=[table.c[c] for c in conflict_cols]
+            )
+
+            with engine.begin() as connection:
+                result = connection.execute(stmt)
+                total_inserted += result.rowcount
+
+            if chunk_count > 1:
+                logger.info(
+                    "[Load] %s: lot %d/%d termine (%d lignes)",
+                    table_name,
+                    chunk_idx + 1,
+                    chunk_count,
+                    len(chunk),
+                )
+
+        return total_inserted
 
     def _create_fk_if_not_exists(
         self,
@@ -74,29 +150,17 @@ class PostgresLoader:
         """)
         conn.execute(sql)
 
-    def save(
-        self, df: pd.DataFrame, table_name: str, schema: str, chunksize: int = 1000
-    ):
-        full_table_name = f"{schema}.{table_name}" if schema else table_name
-        logger.info(f"Saving {len(df)} records to {full_table_name}")
-
-        DataValidator.validate(df, table_name)
-
-        try:
-            engine = self._get_engine()
-            df.to_sql(
-                name=table_name,
-                con=engine,
-                schema=schema,
-                if_exists="append",
-                index=False,
-                chunksize=chunksize,
-                method="multi",
+    def _ensure_foreign_keys(self, schema: str):
+        engine = self._get_engine()
+        with engine.connect() as conn:
+            self._create_fk_if_not_exists(
+                conn, schema, "fact_aqi", "city_key", "dim_city", "city_key"
             )
-            logger.info(f"Successfully saved to {full_table_name}")
-        except Exception as e:
-            logger.error(f"Error saving to PostgreSQL {full_table_name}: {e}")
-            raise
+            self._create_fk_if_not_exists(
+                conn, schema, "fact_aqi", "date_key", "dim_date", "date_key"
+            )
+            conn.commit()
+        logger.info("Foreign keys ensured in schema '%s'", schema)
 
     def save_star_schema(
         self,
@@ -107,39 +171,38 @@ class PostgresLoader:
     ):
         logger.info("Saving star schema to PostgreSQL")
 
+        # 1. Ensure schema + tables exist
         engine = self._get_engine()
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
-            conn.commit()
+        self._ensure_tables(schema)
 
+        # 2. Insert with ON CONFLICT DO NOTHING (idempotent)
         tables = {
             "dim_city": dim_city,
             "dim_date": dim_date,
             "fact_aqi": fact_aqi,
         }
 
-        for table_name in ("fact_aqi", "dim_date", "dim_city"):
-            df = tables[table_name]
-            if df.empty:
-                continue
-            self._delete_all(table_name, schema)
-
+        total = 0
         for table_name in ("dim_city", "dim_date", "fact_aqi"):
             df = tables[table_name]
             if df.empty:
                 continue
-            self.save(df=df, table_name=table_name, schema=schema)
-
-        engine = self._get_engine()
-        with engine.connect() as conn:
-            self._ensure_unique_constraint(conn, schema, "dim_city", "city_key")
-            self._ensure_unique_constraint(conn, schema, "dim_date", "date_key")
-            self._create_fk_if_not_exists(
-                conn, schema, "fact_aqi", "city_key", "dim_city", "city_key"
+            DataValidator.validate(df, table_name)
+            inserted = self._insert_with_conflict(df, table_name, schema)
+            total += inserted
+            logger.info(
+                "[Load] %s: %d lignes inserees (ignorees si existantes)",
+                table_name,
+                inserted,
             )
-            self._create_fk_if_not_exists(
-                conn, schema, "fact_aqi", "date_key", "dim_date", "date_key"
-            )
-            conn.commit()
 
-        logger.info("Star schema saved to PostgreSQL successfully")
+        # 3. Ensure FK constraints
+        self._ensure_foreign_keys(schema)
+
+        logger.info(
+            "[Load] Star schema sauvegarde: %d lignes totales dans %s",
+            total,
+            schema,
+        )

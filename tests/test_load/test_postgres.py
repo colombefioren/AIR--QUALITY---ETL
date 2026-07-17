@@ -52,29 +52,31 @@ def test_postgres_loader_init(mock_engine):
 
 
 @patch("src.load.postgres.create_engine")
-def test_save_star_schema_calls_to_sql(mock_engine):
+def test_save_star_schema_calls_insert(mock_engine):
     mock_conn = MagicMock()
     mock_engine.return_value.connect.return_value.__enter__ = MagicMock(return_value=mock_conn)
     mock_engine.return_value.connect.return_value.__exit__ = MagicMock(return_value=False)
+    mock_engine.return_value.begin.return_value.__enter__ = MagicMock(return_value=mock_conn)
+    mock_engine.return_value.begin.return_value.__exit__ = MagicMock(return_value=False)
 
     loader = PostgresLoader("postgresql://user:pass@localhost/test")
     loader.engine = mock_engine.return_value
 
-    with patch.object(loader, "_delete_all"), \
-         patch.object(loader, "save") as mock_save, \
-         patch.object(loader, "_ensure_unique_constraint"), \
-         patch.object(loader, "_create_fk_if_not_exists"):
+    with patch.object(loader, "_ensure_tables"), \
+         patch.object(loader, "_insert_with_conflict") as mock_insert, \
+         patch.object(loader, "_ensure_foreign_keys"):
         loader.save_star_schema(_sample_dim_city(), _sample_dim_date(), _sample_fact_aqi(), "public")
-        assert mock_save.call_count == 3
+        assert mock_insert.call_count == 3
 
 
 def test_save_star_schema_skips_empty():
     loader = PostgresLoader("postgresql://user:pass@localhost/test")
     loader.engine = MagicMock()
 
-    with patch.object(loader, "_delete_all") as mock_delete, \
-         patch.object(loader, "save") as mock_save, \
+    with patch.object(loader, "_ensure_tables"), \
+         patch.object(loader, "_insert_with_conflict") as mock_insert, \
+         patch.object(loader, "_ensure_foreign_keys"), \
          patch.object(loader, "_get_engine"):
         empty_df = pd.DataFrame()
         loader.save_star_schema(empty_df, _sample_dim_date(), _sample_fact_aqi(), "public")
-        assert mock_save.call_count == 2
+        assert mock_insert.call_count == 2
