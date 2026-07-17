@@ -32,6 +32,8 @@ def test_transform_columns_present():
     result = transform_hourly_aqi(_sample_raw(), "Paris")
     expected = {
         "city_name",
+        "latitude",
+        "longitude",
         "datetime",
         "date",
         "hour",

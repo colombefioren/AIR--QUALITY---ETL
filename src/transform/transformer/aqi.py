@@ -4,15 +4,19 @@ from pathlib import Path
 import pandas as pd
 
 from config.settings import Settings
+from src.extract.aqi_extractor import CITIES
 from src.transform.quality.data_validator import DataValidator
 
 
 def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
+    coords = CITIES[city_name]
     rows = []
     for entry in raw_list:
         dt = datetime.fromtimestamp(entry["dt"])
         rows.append({
             "city_name": city_name,
+            "latitude": coords["lat"],
+            "longitude": coords["lon"],
             "datetime": dt,
             "date": dt.date(),
             "hour": dt.hour,
@@ -42,7 +46,7 @@ def rebuild_clean_from_raw(
     dfs = [pd.read_csv(f) for f in csv_files]
     combined = pd.concat(dfs, ignore_index=True)
     combined = combined.drop_duplicates(subset=["city_name", "date", "hour"], keep="last")
-    combined = combined.sort_values(["city_name", "datetime"]).reset_index(drop=True)
+    combined = combined.sort_values(["datetime", "city_name"]).reset_index(drop=True)
 
     clean_path.parent.mkdir(parents=True, exist_ok=True)
     combined.to_csv(clean_path, index=False)
