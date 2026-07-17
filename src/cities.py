@@ -8,12 +8,12 @@ from config.settings import Settings
 logger = logging.getLogger(__name__)
 
 CITIES = [
-    {"city_name": "Paris",        "country": "France",     "latitude": 48.8566,  "longitude": 2.3522},
-    {"city_name": "London",       "country": "UK",         "latitude": 51.5074,  "longitude": -0.1278},
-    {"city_name": "New York",     "country": "USA",        "latitude": 40.7128,  "longitude": -74.0060},
-    {"city_name": "Beijing",      "country": "China",      "latitude": 39.9042,  "longitude": 116.4074},
-    {"city_name": "Mumbai",       "country": "India",      "latitude": 19.0760,  "longitude": 72.8777},
-    {"city_name": "Antananarivo", "country": "Madagascar",  "latitude": -18.8792, "longitude": 47.5079},
+    {"city_name": "Antananarivo", "country": "Madagascar", "latitude": -18.8792, "longitude": 47.5079},
+    {"city_name": "Toamasina",    "country": "Madagascar", "latitude": -18.1443, "longitude": 49.3958},
+    {"city_name": "Mahajanga",    "country": "Madagascar", "latitude": -15.7167, "longitude": 46.3167},
+    {"city_name": "Fianarantsoa", "country": "Madagascar", "latitude": -21.4333, "longitude": 47.0833},
+    {"city_name": "Toliara",      "country": "Madagascar", "latitude": -23.3500, "longitude": 43.6667},
+    {"city_name": "Antsiranana",  "country": "Madagascar", "latitude": -12.2667, "longitude": 49.2833},
 ]
 
 
