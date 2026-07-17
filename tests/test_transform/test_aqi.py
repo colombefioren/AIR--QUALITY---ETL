@@ -24,12 +24,12 @@ def _sample_raw():
 
 
 def test_transform_returns_dataframe():
-    result = transform_hourly_aqi(_sample_raw(), "Paris")
+    result = transform_hourly_aqi(_sample_raw(), "Antananarivo")
     assert isinstance(result, pd.DataFrame)
 
 
 def test_transform_columns_present():
-    result = transform_hourly_aqi(_sample_raw(), "Paris")
+    result = transform_hourly_aqi(_sample_raw(), "Antananarivo")
     expected = {
         "city_name",
         "latitude",
@@ -52,10 +52,10 @@ def test_transform_columns_present():
 
 def test_transform_dedup_same_hour():
     raw = _sample_raw() + _sample_raw()
-    result = transform_hourly_aqi(raw, "Paris")
+    result = transform_hourly_aqi(raw, "Antananarivo")
     assert len(result) == 1
 
 
 def test_transform_aqi_range():
-    result = transform_hourly_aqi(_sample_raw(), "Paris")
+    result = transform_hourly_aqi(_sample_raw(), "Antananarivo")
     assert 1 <= result["aqi"].iloc[0] <= 5

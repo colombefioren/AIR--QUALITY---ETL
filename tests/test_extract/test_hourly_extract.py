@@ -20,7 +20,7 @@ def test_cities_have_required_fields():
 
 
 def test_get_city_coords_known():
-    coords = get_city_coords("Paris")
+    coords = get_city_coords("Antananarivo")
     assert coords is not None
     assert "lat" in coords
     assert "lon" in coords
@@ -33,8 +33,8 @@ def test_get_city_coords_unknown():
 def test_get_city_names():
     names = get_city_names()
     assert len(names) >= 6
-    assert "Paris" in names
-    assert "London" in names
+    assert "Antananarivo" in names
+    assert "Toamasina" in names
 
 
 @patch("src.extract.aqi_extractor._request_with_retry")
@@ -45,7 +45,7 @@ def test_extract_hourly_success(mock_request):
             "so2": 2, "pm2_5": 10, "pm10": 20, "nh3": 3
         }, "dt": 1700000000}]
     }
-    result = extract_hourly("Paris")
+    result = extract_hourly("Antananarivo")
     assert result is not None
     assert len(result) == 1
 
@@ -53,7 +53,7 @@ def test_extract_hourly_success(mock_request):
 @patch("src.extract.aqi_extractor._request_with_retry")
 def test_extract_hourly_api_error(mock_request):
     mock_request.return_value = None
-    result = extract_hourly("Paris")
+    result = extract_hourly("Antananarivo")
     assert result is None
 
 

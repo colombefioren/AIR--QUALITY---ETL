@@ -30,18 +30,29 @@ def _month_chunks(
 
 
 def _request_with_retry(
-    url: str, api_key: str, params: Optional[dict] = None, retries: int = 3
+    url: str, api_key: str, params: Optional[dict] = None, retries: int = 3, timeout: int = 30
 ) -> Optional[dict]:
     params = params or {}
     params["appid"] = api_key
     for attempt in range(retries):
-        resp = requests.get(url, params=params)
-        if resp.status_code == 200:
-            return resp.json()
-        if resp.status_code == 429:
-            time.sleep(2 ** attempt)
-            continue
-        resp.raise_for_status()
+        try:
+            resp = requests.get(url, params=params, timeout=timeout)
+            if resp.status_code == 200:
+                return resp.json()
+            if resp.status_code == 429:
+                wait = 2 ** attempt
+                logger.warning(f"Rate limited — retry {attempt+1}/{retries} in {wait}s")
+                time.sleep(wait)
+                continue
+            resp.raise_for_status()
+        except requests.RequestException as e:
+            if attempt < retries - 1:
+                wait = 2 ** attempt
+                logger.warning(f"Attempt {attempt+1}/{retries} failed: {e} — retry in {wait}s")
+                time.sleep(wait)
+                continue
+            logger.error(f"All {retries} attempts failed for {url}")
+            return None
     return None
 
 

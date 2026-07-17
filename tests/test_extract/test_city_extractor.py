@@ -44,4 +44,4 @@ def test_city_keys_are_sequential(tmp_path):
 def test_get_city_names_returns_list():
     names = get_city_names()
     assert isinstance(names, list)
-    assert "Paris" in names
+    assert "Antananarivo" in names

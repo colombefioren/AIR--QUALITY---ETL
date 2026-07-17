@@ -55,7 +55,7 @@ def test_extract_backfill_success(mock_request):
     }
     start = datetime(2026, 4, 1)
     end = datetime(2026, 4, 30)
-    result = extract_backfill("Paris", start, end)
+    result = extract_backfill("Antananarivo", start, end)
     assert result is not None
     assert len(result) == 1
 
@@ -65,7 +65,7 @@ def test_extract_backfill_api_error(mock_request):
     mock_request.return_value = None
     start = datetime(2026, 4, 1)
     end = datetime(2026, 4, 30)
-    result = extract_backfill("Paris", start, end)
+    result = extract_backfill("Antananarivo", start, end)
     assert result is None
 
 
