@@ -6,6 +6,9 @@ import pandas as pd
 from aqi_config.settings import Settings
 from src.cities import get_city_coords
 from src.transform.quality.data_validator import DataValidator
+from src.transform.transformer.dim_pollutant import POLLUTANT_CODE_TO_ID
+
+POLLUTANT_CODES = list(POLLUTANT_CODE_TO_ID.keys())
 
 
 def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
@@ -61,7 +64,12 @@ def rebuild_clean_from_raw(
     return clean_path
 
 
-def build_fact_aqi(clean_df: pd.DataFrame, dim_city: pd.DataFrame, dim_date: pd.DataFrame) -> pd.DataFrame:
+def build_fact_air_quality(
+    clean_df: pd.DataFrame,
+    dim_city: pd.DataFrame,
+    dim_date: pd.DataFrame,
+    dim_pollutant: pd.DataFrame,
+) -> pd.DataFrame:
     city_key_map = dim_city.set_index("city_name")["city_key"].to_dict()
     date_key_map = {}
     for _, row in dim_date.iterrows():
@@ -77,10 +85,14 @@ def build_fact_aqi(clean_df: pd.DataFrame, dim_city: pd.DataFrame, dim_date: pd.
     df["city_key"] = df["city_key"].astype(int)
     df["date_key"] = df["date_key"].astype(int)
 
-    fact_cols = [
-        "city_key", "date_key",
-        "aqi", "co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3",
-    ]
-    df = df[fact_cols]
-    DataValidator.validate(df, name="fact_aqi")
-    return df
+    id_vars = ["city_key", "date_key", "aqi"]
+    long_df = df.melt(id_vars=id_vars, value_vars=POLLUTANT_CODES, var_name="code", value_name="value")
+
+    long_df["pollutant_id"] = long_df["code"].map(POLLUTANT_CODE_TO_ID)
+    long_df = long_df.dropna(subset=["pollutant_id"])
+    long_df["pollutant_id"] = long_df["pollutant_id"].astype(int)
+
+    long_df = long_df[["city_key", "date_key", "pollutant_id", "value", "aqi"]]
+    long_df = long_df.sort_values(["city_key", "date_key", "pollutant_id"]).reset_index(drop=True)
+    DataValidator.validate(long_df, name="fact_air_quality")
+    return long_df
