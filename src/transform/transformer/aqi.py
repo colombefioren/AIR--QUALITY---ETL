@@ -9,7 +9,7 @@ def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
         dt = datetime.fromtimestamp(entry["dt"])
         rows.append({
             "city_name": city_name,
-            "timestamp": dt,
+            "datetime": dt,
             "date": dt.date(),
             "hour": dt.hour,
             "aqi": entry["main"]["aqi"],

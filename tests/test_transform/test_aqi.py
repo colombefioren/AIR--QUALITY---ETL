@@ -5,15 +5,22 @@ from src.transform.transformer.aqi import transform_hourly_aqi
 
 
 def _sample_raw():
-    return [{
-        "main": {"aqi": 2},
-        "components": {
-            "co": 300, "no": 2, "no2": 10,
-            "o3": 40, "so2": 3, "pm2_5": 15,
-            "pm10": 25, "nh3": 5,
-        },
-        "dt": 1700000000,
-    }]
+    return [
+        {
+            "main": {"aqi": 2},
+            "components": {
+                "co": 300,
+                "no": 2,
+                "no2": 10,
+                "o3": 40,
+                "so2": 3,
+                "pm2_5": 15,
+                "pm10": 25,
+                "nh3": 5,
+            },
+            "dt": 1700000000,
+        }
+    ]
 
 
 def test_transform_returns_dataframe():
@@ -23,8 +30,21 @@ def test_transform_returns_dataframe():
 
 def test_transform_columns_present():
     result = transform_hourly_aqi(_sample_raw(), "Paris")
-    expected = {"city_name", "timestamp", "date", "hour", "aqi",
-                "co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3"}
+    expected = {
+        "city_name",
+        "datetime",
+        "date",
+        "hour",
+        "aqi",
+        "co",
+        "no",
+        "no2",
+        "o3",
+        "so2",
+        "pm2_5",
+        "pm10",
+        "nh3",
+    }
     assert expected.issubset(set(result.columns))
 
 
