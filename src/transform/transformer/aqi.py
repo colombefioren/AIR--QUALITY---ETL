@@ -63,7 +63,9 @@ def rebuild_clean_from_raw(
 
 def build_fact_aqi(clean_df: pd.DataFrame, dim_city: pd.DataFrame, dim_date: pd.DataFrame) -> pd.DataFrame:
     city_key_map = dim_city.set_index("city_name")["city_key"].to_dict()
-    date_key_map = dim_date.set_index(["full_date", "hour"])["date_key"].to_dict()
+    date_key_map = {}
+    for _, row in dim_date.iterrows():
+        date_key_map[(str(row["full_date"]), int(row["hour"]))] = row["date_key"]
 
     df = clean_df.copy()
     df["city_key"] = df["city_name"].map(city_key_map)
