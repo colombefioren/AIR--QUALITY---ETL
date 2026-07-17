@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -39,7 +40,7 @@ def test_build_dim_date_columns():
 def test_build_dim_date_key_format():
     df = build_dim_date(_sample_df())
     key = df["date_key"].iloc[0]
-    assert isinstance(key, int)
+    assert isinstance(key, (int, np.integer))
     assert len(str(key)) == 10
 
 
@@ -50,7 +51,7 @@ def test_build_dim_date_weekend():
         "hour": [10],
     })
     df = build_dim_date(saturday)
-    assert df["is_weekend"].iloc[0] is True or df["is_weekend"].iloc[0] == "True"
+    assert bool(df["is_weekend"].iloc[0]) is True
 
 
 def test_build_dim_date_saves_csv(tmp_path):

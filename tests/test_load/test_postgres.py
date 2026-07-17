@@ -61,12 +61,11 @@ def test_save_star_schema_calls_to_sql(mock_engine):
     loader.engine = mock_engine.return_value
 
     with patch.object(loader, "_delete_all"), \
-         patch.object(loader, "save"), \
+         patch.object(loader, "save") as mock_save, \
          patch.object(loader, "_ensure_unique_constraint"), \
          patch.object(loader, "_create_fk_if_not_exists"):
         loader.save_star_schema(_sample_dim_city(), _sample_dim_date(), _sample_fact_aqi(), "public")
-
-    assert loader.save.call_count == 3
+        assert mock_save.call_count == 3
 
 
 def test_save_star_schema_skips_empty():
