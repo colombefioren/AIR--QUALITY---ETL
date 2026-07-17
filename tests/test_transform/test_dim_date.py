@@ -60,3 +60,9 @@ def test_build_dim_date_saves_csv(tmp_path):
     assert csv_path.exists()
     loaded = pd.read_csv(csv_path)
     assert len(loaded) == 3
+
+
+def test_build_dim_date_season():
+    df = build_dim_date(_sample_df())
+    assert "season" in df.columns
+    assert df["season"].iloc[0] in ("dry", "wet")

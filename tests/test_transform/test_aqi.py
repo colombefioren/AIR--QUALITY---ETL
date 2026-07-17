@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from src.transform.transformer.aqi import transform_hourly_aqi
+from src.transform.transformer.aqi import build_fact_air_quality, transform_hourly_aqi
 
 
 def _sample_raw():
@@ -18,7 +18,7 @@ def _sample_raw():
                 "pm10": 25,
                 "nh3": 5,
             },
-            "dt": 1700000000,
+            "dt": 1784271600,
         }
     ]
 
@@ -59,3 +59,56 @@ def test_transform_dedup_same_hour():
 def test_transform_aqi_range():
     result = transform_hourly_aqi(_sample_raw(), "Antananarivo")
     assert 1 <= result["aqi"].iloc[0] <= 5
+
+
+def _sample_dim_city():
+    return pd.DataFrame({
+        "city_key": [1, 2],
+        "city_name": ["Antananarivo", "Toamasina"],
+        "country": ["Madagascar", "Madagascar"],
+        "latitude": [-18.8792, -18.1443],
+        "longitude": [47.5079, 49.3958],
+        "region_id": [1, 2],
+    })
+
+
+def _sample_dim_date():
+    return pd.DataFrame({
+        "date_key": [2026071710, 2026071711],
+        "full_date": ["2026-07-17", "2026-07-17"],
+        "hour": [10, 11],
+        "day_of_week": ["Thursday", "Thursday"],
+        "is_weekend": [False, False],
+        "month": [7, 7],
+        "year": [2026, 2026],
+        "season": ["dry", "dry"],
+    })
+
+
+def _sample_dim_pollutant():
+    return pd.DataFrame({
+        "pollutant_id": [1, 2],
+        "code": ["co", "no2"],
+        "name": ["Carbon Monoxide", "Nitrogen Dioxide"],
+        "unit": ["μg/m³", "μg/m³"],
+        "category_id": [1, 1],
+        "who_threshold": [4000.0, 25.0],
+    })
+
+
+def test_build_fact_air_quality_returns_long_format():
+    raw = _sample_raw()
+    df = transform_hourly_aqi(raw, "Antananarivo")
+    dim_city = _sample_dim_city()
+    dim_date = _sample_dim_date()
+    dim_pollutant = _sample_dim_pollutant()
+
+    fact = build_fact_air_quality(df, dim_city, dim_date, dim_pollutant)
+    assert isinstance(fact, pd.DataFrame)
+    assert "city_key" in fact.columns
+    assert "date_key" in fact.columns
+    assert "pollutant_id" in fact.columns
+    assert "value" in fact.columns
+    assert "aqi" in fact.columns
+    assert len(fact) >= 1
+    assert "co" not in fact.columns
