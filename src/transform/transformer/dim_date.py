@@ -10,6 +10,10 @@ logger = logging.getLogger(__name__)
 DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
 
+def _get_season(month: int) -> str:
+    return "dry" if 4 <= month <= 10 else "wet"
+
+
 def build_dim_date(
     source_df: pd.DataFrame,
     csv_path: Path = Settings.DATE_CSV_PATH,
@@ -32,6 +36,7 @@ def build_dim_date(
             "is_weekend": dt.weekday() >= 5,
             "month": dt.month,
             "year": dt.year,
+            "season": _get_season(dt.month),
         })
 
     df = pd.DataFrame(rows)
