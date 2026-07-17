@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 from pathlib import Path
 
-from src.load.csv import save_processed_data, save_raw_hourly
+from src.load.csv import save_processed_data, save_raw_backfill, save_raw_hourly
 
 
 @pytest.fixture
@@ -24,6 +24,17 @@ def test_save_raw_hourly_creates_file(sample_df, tmp_path):
 
 def test_save_raw_hourly_directories_created(sample_df, tmp_path):
     path = save_raw_hourly(sample_df, "London", tmp_path)
+    assert path.parent.exists()
+
+
+def test_save_raw_backfill_creates_file(sample_df, tmp_path):
+    path = save_raw_backfill(sample_df, "Paris", tmp_path, 2026, 4)
+    assert path.exists()
+    assert "paris_2026-04" in path.name
+
+
+def test_save_raw_backfill_directories_created(sample_df, tmp_path):
+    path = save_raw_backfill(sample_df, "London", tmp_path, 2026, 4)
     assert path.parent.exists()
 
 
