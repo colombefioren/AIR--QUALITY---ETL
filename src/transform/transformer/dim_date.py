@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from config.settings import Settings
+from aqi_config.settings import Settings
 
 logger = logging.getLogger(__name__)
 

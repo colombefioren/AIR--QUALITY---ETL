@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 import pytest
 
-from config.settings import Settings
+from aqi_config.settings import Settings
 
 
 def test_default_values():

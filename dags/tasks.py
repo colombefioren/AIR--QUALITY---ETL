@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 import pandas as pd
 
-from config.settings import Settings
+from aqi_config.settings import Settings
 from src.cities import get_city_names, load_cities
 from src.extract.aqi_extractor import extract_backfill, extract_hourly
 from src.load.csv import save_raw_backfill, save_raw_hourly

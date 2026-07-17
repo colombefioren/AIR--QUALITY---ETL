@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from config.settings import Settings
+from aqi_config.settings import Settings
 from src.cities import get_city_coords
 from src.transform.quality.data_validator import DataValidator
 

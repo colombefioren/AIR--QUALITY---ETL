@@ -5,7 +5,7 @@ from typing import Optional
 
 import requests
 
-from config.settings import Settings
+from aqi_config.settings import Settings
 from src.cities import get_city_coords
 
 logger = logging.getLogger(__name__)
