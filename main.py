@@ -1,6 +1,7 @@
 from config.logging import setup_logging
 from config.settings import Settings
-from src.extract.aqi_extractor import CITIES, extract_hourly
+from src.extract.city_extractor import get_city_names
+from src.extract.aqi_extractor import extract_hourly
 from src.load.csv import save_raw_hourly
 from src.transform.quality.dataframe_cleaner import DataFrameCleaner
 from src.transform.transformer.aqi import rebuild_clean_from_raw, transform_hourly_aqi
@@ -11,7 +12,7 @@ def run_hourly_pipeline():
     Settings.validate()
     Settings.ensure_directories()
 
-    for city in CITIES:
+    for city in get_city_names():
         raw = extract_hourly(city)
         if not raw:
             continue

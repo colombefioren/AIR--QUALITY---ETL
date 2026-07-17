@@ -4,12 +4,12 @@ from pathlib import Path
 import pandas as pd
 
 from config.settings import Settings
-from src.extract.aqi_extractor import CITIES
+from src.extract.city_extractor import get_city_coords
 from src.transform.quality.data_validator import DataValidator
 
 
 def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
-    coords = CITIES[city_name]
+    coords = get_city_coords(city_name)
     rows = []
     for entry in raw_list:
         dt = datetime.fromtimestamp(entry["dt"])
