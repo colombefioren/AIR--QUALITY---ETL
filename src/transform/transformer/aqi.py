@@ -1,6 +1,10 @@
 from datetime import datetime
+from pathlib import Path
 
 import pandas as pd
+
+from config.settings import Settings
+from src.transform.quality.data_validator import DataValidator
 
 
 def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
@@ -25,3 +29,23 @@ def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     df = df.drop_duplicates(subset=["city_name", "date", "hour"], keep="last")
     return df
+
+
+def rebuild_clean_from_raw(
+    raw_dir: Path = Settings.RAW_HOURLY_DIR,
+    clean_path: Path = Settings.HOURLY_COMBINED_PATH,
+) -> Path:
+    csv_files = sorted(raw_dir.glob("*.csv"))
+    if not csv_files:
+        return clean_path
+
+    dfs = [pd.read_csv(f) for f in csv_files]
+    combined = pd.concat(dfs, ignore_index=True)
+    combined = combined.drop_duplicates(subset=["city_name", "date", "hour"], keep="last")
+    combined = combined.sort_values(["city_name", "datetime"]).reset_index(drop=True)
+
+    clean_path.parent.mkdir(parents=True, exist_ok=True)
+    combined.to_csv(clean_path, index=False)
+
+    DataValidator.validate(combined, name="hourly_aqi_combined")
+    return clean_path

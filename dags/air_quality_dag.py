@@ -4,9 +4,9 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 from dags.tasks import (
-    clean_and_transform_task,
     extract_hourly_task,
     load_to_warehouse,
+    rebuild_clean_task,
     validate_settings,
 )
 
@@ -34,13 +34,13 @@ with DAG(
         task_id="extract_hourly",
         python_callable=extract_hourly_task,
     )
-    t_transform = PythonOperator(
-        task_id="clean_and_transform",
-        python_callable=clean_and_transform_task,
+    t_rebuild = PythonOperator(
+        task_id="rebuild_clean",
+        python_callable=rebuild_clean_task,
     )
     t_load = PythonOperator(
         task_id="load_to_warehouse",
         python_callable=load_to_warehouse,
     )
 
-    t_validate >> t_extract >> t_transform >> t_load
+    t_validate >> t_extract >> t_rebuild >> t_load
