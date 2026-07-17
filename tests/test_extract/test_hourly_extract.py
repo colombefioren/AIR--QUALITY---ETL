@@ -4,7 +4,7 @@ import pytest
 import requests
 
 from src.extract.aqi_extractor import extract_hourly
-from src.extract.city_extractor import CITIES, get_city_coords, get_city_names
+from src.cities import CITIES, get_city_coords, get_city_names
 
 
 def test_cities_count():

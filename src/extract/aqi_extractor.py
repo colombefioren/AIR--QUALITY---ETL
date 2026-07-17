@@ -5,7 +5,7 @@ from typing import Optional
 import requests
 
 from config.settings import Settings
-from src.extract.city_extractor import CITIES, get_city_coords
+from src.cities import get_city_coords
 
 OPENWEATHER_BASE = "http://api.openweathermap.org/data/2.5"
 

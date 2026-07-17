@@ -4,7 +4,7 @@ import pandas as pd
 
 from config.logging import setup_logging
 from config.settings import Settings
-from src.extract.city_extractor import get_city_names, load_cities
+from src.cities import get_city_names, load_cities
 from src.extract.aqi_extractor import extract_backfill, extract_hourly
 from src.load.csv import save_raw_backfill, save_raw_hourly
 from src.load.postgres import PostgresLoader
