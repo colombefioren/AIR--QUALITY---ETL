@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.extract.city_extractor import CITIES, get_city_coords, get_city_names, load_cities
+from src.cities import CITIES, get_city_coords, get_city_names, load_cities
 
 
 def test_cities_list_not_empty():

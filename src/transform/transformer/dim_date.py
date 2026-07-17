@@ -19,7 +19,7 @@ def build_dim_date(
         source_df = source_df.copy()
         source_df["datetime"] = pd.to_datetime(source_df["date"]) + pd.to_timedelta(source_df["hour"], unit="h")
 
-    dt_series = pd.to_datetime(source_df["datetime"]).drop_duplicates().sort_values().reset_index(drop=True)
+    dt_series = pd.to_datetime(source_df["datetime"]).dt.floor("h").drop_duplicates().sort_values().reset_index(drop=True)
 
     rows = []
     for dt in dt_series:
