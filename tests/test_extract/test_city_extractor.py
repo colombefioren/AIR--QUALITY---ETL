@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from src.cities import CITIES, get_city_coords, get_city_names, load_cities
+from src.cities import CITIES, REGIONS, get_city_coords, get_city_names, load_cities, load_regions
 
 
 def test_cities_list_not_empty():
@@ -45,3 +45,22 @@ def test_get_city_names_returns_list():
     names = get_city_names()
     assert isinstance(names, list)
     assert "Antananarivo" in names
+
+
+def test_regions_defined():
+    assert len(REGIONS) >= 6
+
+
+def test_load_regions_creates_csv(tmp_path):
+    csv_path = tmp_path / "dim_region.csv"
+    df = load_regions(csv_path)
+    assert csv_path.exists()
+    assert "region_id" in df.columns
+    assert "region_name" in df.columns
+
+
+def test_load_regions_reads_existing(tmp_path):
+    csv_path = tmp_path / "dim_region.csv"
+    load_regions(csv_path)
+    df2 = load_regions(csv_path)
+    assert len(df2) == len(REGIONS)

@@ -1,4 +1,5 @@
 import logging
+import pathlib
 
 import pandas as pd
 from sqlalchemy import create_engine, text, MetaData, Table as SATable
@@ -10,48 +11,25 @@ logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 5000
 
-CREATE_TABLES_SQL = """
-CREATE TABLE IF NOT EXISTS {schema}.dim_city (
-    city_key    INTEGER PRIMARY KEY,
-    city_name   VARCHAR(100) NOT NULL,
-    country     VARCHAR(100),
-    latitude    DOUBLE PRECISION,
-    longitude   DOUBLE PRECISION
-);
+_HERE = pathlib.Path(__file__).resolve().parent
+_SCHEMA_SQL = (_HERE.parent.parent / "sql" / "schema.sql").read_text()
 
-CREATE TABLE IF NOT EXISTS {schema}.dim_date (
-    date_key    INTEGER PRIMARY KEY,
-    full_date   DATE NOT NULL,
-    hour        INTEGER NOT NULL,
-    day_of_week VARCHAR(10),
-    is_weekend  BOOLEAN,
-    month       INTEGER,
-    year        INTEGER
-);
-
-CREATE TABLE IF NOT EXISTS {schema}.fact_aqi (
-    fact_id     SERIAL PRIMARY KEY,
-    city_key    INTEGER NOT NULL,
-    date_key    INTEGER NOT NULL,
-    aqi         INTEGER,
-    co          DOUBLE PRECISION,
-    no          DOUBLE PRECISION,
-    no2         DOUBLE PRECISION,
-    o3          DOUBLE PRECISION,
-    so2         DOUBLE PRECISION,
-    pm2_5       DOUBLE PRECISION,
-    pm10        DOUBLE PRECISION,
-    nh3         DOUBLE PRECISION
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uq_fact_aqi_city_date
-    ON {schema}.fact_aqi (city_key, date_key);
-"""
+LOAD_ORDER = [
+    "dim_region",
+    "dim_pollutant_category",
+    "dim_city",
+    "dim_pollutant",
+    "dim_date",
+    "fact_air_quality",
+]
 
 UNIQUE_INDEXES = {
-    "dim_city":  [["city_key"]],
-    "dim_date":  [["date_key"]],
-    "fact_aqi":  [["city_key", "date_key"]],
+    "dim_region":             [["region_id"]],
+    "dim_pollutant_category": [["category_id"]],
+    "dim_city":               [["city_key"]],
+    "dim_pollutant":          [["pollutant_id"]],
+    "dim_date":               [["date_key"]],
+    "fact_air_quality":       [["city_key", "date_key", "pollutant_id"]],
 }
 
 
@@ -77,8 +55,9 @@ class PostgresLoader:
 
     def _ensure_tables(self, schema: str):
         engine = self._get_engine()
+        sql = _SCHEMA_SQL.replace("{schema}", schema)
         with engine.begin() as conn:
-            for statement in CREATE_TABLES_SQL.format(schema=schema).split(";"):
+            for statement in sql.split(";"):
                 statement = statement.strip()
                 if statement:
                     conn.execute(text(statement))
@@ -150,36 +129,41 @@ class PostgresLoader:
     def _ensure_foreign_keys(self, schema: str):
         engine = self._get_engine()
         with engine.connect() as conn:
-            self._create_fk_if_not_exists(
-                conn, schema, "fact_aqi", "city_key", "dim_city", "city_key"
-            )
-            self._create_fk_if_not_exists(
-                conn, schema, "fact_aqi", "date_key", "dim_date", "date_key"
-            )
+            self._create_fk_if_not_exists(conn, schema, "dim_city", "region_id", "dim_region", "region_id")
+            self._create_fk_if_not_exists(conn, schema, "dim_pollutant", "category_id", "dim_pollutant_category", "category_id")
+            self._create_fk_if_not_exists(conn, schema, "fact_air_quality", "city_key", "dim_city", "city_key")
+            self._create_fk_if_not_exists(conn, schema, "fact_air_quality", "date_key", "dim_date", "date_key")
+            self._create_fk_if_not_exists(conn, schema, "fact_air_quality", "pollutant_id", "dim_pollutant", "pollutant_id")
             conn.commit()
         logger.info("Foreign keys ensured in schema '%s'", schema)
 
-    def save_star_schema(
+    def save_snowflake_schema(
         self,
+        dim_region: pd.DataFrame,
+        dim_pollutant_category: pd.DataFrame,
         dim_city: pd.DataFrame,
+        dim_pollutant: pd.DataFrame,
         dim_date: pd.DataFrame,
-        fact_aqi: pd.DataFrame,
+        fact_air_quality: pd.DataFrame,
         schema: str,
     ):
-        logger.info("Saving star schema to PostgreSQL")
+        logger.info("Saving snowflake schema to PostgreSQL")
         engine = self._get_engine()
         with engine.begin() as conn:
             conn.execute(text(f"CREATE SCHEMA IF NOT EXISTS {schema}"))
         self._ensure_tables(schema)
 
         tables = {
+            "dim_region": dim_region,
+            "dim_pollutant_category": dim_pollutant_category,
             "dim_city": dim_city,
+            "dim_pollutant": dim_pollutant,
             "dim_date": dim_date,
-            "fact_aqi": fact_aqi,
+            "fact_air_quality": fact_air_quality,
         }
 
         total = 0
-        for table_name in ("dim_city", "dim_date", "fact_aqi"):
+        for table_name in LOAD_ORDER:
             df = tables[table_name]
             if df.empty:
                 continue
@@ -195,7 +179,7 @@ class PostgresLoader:
         self._ensure_foreign_keys(schema)
 
         logger.info(
-            "[Load] Star schema saved: %d total rows in %s",
+            "[Load] Snowflake schema saved: %d total rows in %s",
             total,
             schema,
         )

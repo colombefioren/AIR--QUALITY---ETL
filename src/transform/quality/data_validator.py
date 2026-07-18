@@ -15,6 +15,7 @@ class DataValidator:
         "pm2_5": (0, 500),
         "pm10": (0, 500),
         "nh3": (0, 500),
+        "value": (0, 50000),
     }
 
     @staticmethod
