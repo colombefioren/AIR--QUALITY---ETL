@@ -63,8 +63,7 @@ def test_save_star_schema_calls_insert(mock_engine):
     loader.engine = mock_engine.return_value
 
     with patch.object(loader, "_ensure_tables"), \
-         patch.object(loader, "_insert_with_conflict") as mock_insert, \
-         patch.object(loader, "_ensure_foreign_keys"):
+         patch.object(loader, "_insert_with_conflict") as mock_insert:
         loader.save_star_schema(_sample_dim_city(), _sample_dim_date(), _sample_fact_aqi(), "public")
         assert mock_insert.call_count == 3
 
@@ -75,7 +74,6 @@ def test_save_star_schema_skips_empty():
 
     with patch.object(loader, "_ensure_tables"), \
          patch.object(loader, "_insert_with_conflict") as mock_insert, \
-         patch.object(loader, "_ensure_foreign_keys"), \
          patch.object(loader, "_get_engine"):
         empty_df = pd.DataFrame()
         loader.save_star_schema(empty_df, _sample_dim_date(), _sample_fact_aqi(), "public")

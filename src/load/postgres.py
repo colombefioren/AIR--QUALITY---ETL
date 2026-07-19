@@ -4,55 +4,12 @@ import pandas as pd
 from sqlalchemy import create_engine, text, MetaData, Table as SATable
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from aqi_config.settings import Settings
 from src.transform.quality.data_validator import DataValidator
 
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 5000
-
-CREATE_TABLES_SQL = """
-CREATE TABLE IF NOT EXISTS {schema}.dim_city (
-    city_key    INTEGER PRIMARY KEY,
-    city_name   VARCHAR(100) NOT NULL,
-    country     VARCHAR(100),
-    latitude    DOUBLE PRECISION,
-    longitude   DOUBLE PRECISION
-);
-
-CREATE TABLE IF NOT EXISTS {schema}.dim_date (
-    date_key    INTEGER PRIMARY KEY,
-    full_date   DATE NOT NULL,
-    hour        INTEGER NOT NULL,
-    day_of_week VARCHAR(10),
-    is_weekend  BOOLEAN,
-    month       INTEGER,
-    year        INTEGER
-);
-
-CREATE TABLE IF NOT EXISTS {schema}.fact_aqi (
-    fact_id     SERIAL PRIMARY KEY,
-    city_key    INTEGER NOT NULL,
-    date_key    INTEGER NOT NULL,
-    aqi         INTEGER,
-    co          DOUBLE PRECISION,
-    no          DOUBLE PRECISION,
-    no2         DOUBLE PRECISION,
-    o3          DOUBLE PRECISION,
-    so2         DOUBLE PRECISION,
-    pm2_5       DOUBLE PRECISION,
-    pm10        DOUBLE PRECISION,
-    nh3         DOUBLE PRECISION
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS uq_fact_aqi_city_date
-    ON {schema}.fact_aqi (city_key, date_key);
-"""
-
-UNIQUE_INDEXES = {
-    "dim_city":  [["city_key"]],
-    "dim_date":  [["date_key"]],
-    "fact_aqi":  [["city_key", "date_key"]],
-}
 
 
 class PostgresLoader:
@@ -77,8 +34,9 @@ class PostgresLoader:
 
     def _ensure_tables(self, schema: str):
         engine = self._get_engine()
+        sql = Settings.SCHEMA_SQL_PATH.read_text().format(schema=schema)
         with engine.begin() as conn:
-            for statement in CREATE_TABLES_SQL.format(schema=schema).split(";"):
+            for statement in sql.split(";"):
                 statement = statement.strip()
                 if statement:
                     conn.execute(text(statement))
@@ -123,42 +81,6 @@ class PostgresLoader:
 
         return total_inserted
 
-    def _create_fk_if_not_exists(
-        self,
-        conn,
-        schema: str,
-        child: str,
-        child_col: str,
-        parent: str,
-        parent_col: str,
-    ):
-        fk_name = f"fk_{child}_{child_col}"
-        sql = text(f"""
-            DO $$ BEGIN
-                IF NOT EXISTS (
-                    SELECT 1 FROM information_schema.table_constraints
-                    WHERE constraint_name = '{fk_name}' AND table_schema = '{schema}'
-                ) THEN
-                    ALTER TABLE {schema}.{child}
-                    ADD CONSTRAINT {fk_name}
-                    FOREIGN KEY ({child_col}) REFERENCES {schema}.{parent} ({parent_col});
-                END IF;
-            END $$;
-        """)
-        conn.execute(sql)
-
-    def _ensure_foreign_keys(self, schema: str):
-        engine = self._get_engine()
-        with engine.connect() as conn:
-            self._create_fk_if_not_exists(
-                conn, schema, "fact_aqi", "city_key", "dim_city", "city_key"
-            )
-            self._create_fk_if_not_exists(
-                conn, schema, "fact_aqi", "date_key", "dim_date", "date_key"
-            )
-            conn.commit()
-        logger.info("Foreign keys ensured in schema '%s'", schema)
-
     def save_star_schema(
         self,
         dim_city: pd.DataFrame,
@@ -191,8 +113,6 @@ class PostgresLoader:
                 table_name,
                 inserted,
             )
-
-        self._ensure_foreign_keys(schema)
 
         logger.info(
             "[Load] Star schema saved: %d total rows in %s",

@@ -136,7 +136,6 @@ Data starts from the first backfill run. `dim_date` dynamically indexes every un
 - `DataValidator` logs out-of-range values but does **not reject** them.
 - Backfill DAG (`schedule="@once"`) must be triggered manually.
 - `dim_date` is **rebuilt from scratch** each run, not incrementally updated.
-- `sql/schema.sql` is a reference copy -- table creation is inline in `PostgresLoader`.
 - Raw CSVs accumulate with **no retention policy**.
 - Cities are processed **sequentially** (no parallelisation).
 

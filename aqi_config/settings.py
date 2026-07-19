@@ -32,6 +32,8 @@ class Settings:
 
     HOURLY_COMBINED_PATH = CLEAN_DIR / "hourly_aqi_combined.csv"
 
+    SCHEMA_SQL_PATH = Path("sql/schema.sql")
+
     CITY_CSV_PATH = STAR_SCHEMA_DIR / "dim_city.csv"
     DATE_CSV_PATH = STAR_SCHEMA_DIR / "dim_date.csv"
     FACT_AQI_PATH = STAR_SCHEMA_DIR / "fact_aqi.csv"
