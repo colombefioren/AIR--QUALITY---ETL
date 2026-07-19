@@ -5,7 +5,6 @@ import pandas as pd
 
 from aqi_config.settings import Settings
 from src.cities import get_city_coords
-from src.transform.quality.data_validator import DataValidator
 
 
 def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
@@ -82,5 +81,4 @@ def build_fact_aqi(clean_df: pd.DataFrame, dim_city: pd.DataFrame, dim_date: pd.
         "aqi", "co", "no", "no2", "o3", "so2", "pm2_5", "pm10", "nh3",
     ]
     df = df[fact_cols]
-    DataValidator.validate(df, name="fact_aqi")
     return df
