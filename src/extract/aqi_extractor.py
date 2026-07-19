@@ -10,8 +10,6 @@ from src.cities import get_city_coords
 
 logger = logging.getLogger(__name__)
 
-OPENWEATHER_BASE = "http://api.openweathermap.org/data/2.5"
-
 
 def _month_chunks(
     start_date: datetime, end_date: datetime
