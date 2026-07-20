@@ -5,6 +5,7 @@ import pandas as pd
 
 from aqi_config.settings import Settings
 from src.cities import get_city_coords
+from src.transform.quality.data_validator import DataValidator
 
 
 def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
