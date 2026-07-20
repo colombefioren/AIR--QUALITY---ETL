@@ -1,24 +1,22 @@
 from datetime import datetime, timedelta
 
-import pandas as pd
-
-from aqi_config.settings import Settings
-from src.cities import get_city_names, load_cities
-from src.extract.aqi_extractor import extract_backfill, extract_hourly
-from src.load.csv import save_raw_backfill, save_raw_hourly
-from src.load.postgres import PostgresLoader
-from src.transform.quality.dataframe_cleaner import DataFrameCleaner
-from src.transform.transformer.aqi import build_fact_aqi, rebuild_clean_from_raw, transform_hourly_aqi
-from src.transform.transformer.dim_date import build_dim_date
-
 
 def validate_settings(**context):
+    from aqi_config.settings import Settings
+
     Settings.validate()
     Settings.ensure_directories()
     return "settings_ok"
 
 
 def extract_hourly_task(**context):
+    from aqi_config.settings import Settings
+    from src.cities import get_city_names
+    from src.extract.aqi_extractor import extract_hourly
+    from src.load.csv import save_raw_hourly
+    from src.transform.quality.dataframe_cleaner import DataFrameCleaner
+    from src.transform.transformer.aqi import transform_hourly_aqi
+
     for city in get_city_names():
         raw = extract_hourly(city)
         if not raw:
@@ -30,11 +28,22 @@ def extract_hourly_task(**context):
 
 
 def rebuild_clean_task(**context):
+    from src.transform.transformer.aqi import rebuild_clean_from_raw
+
     rebuild_clean_from_raw()
     return "rebuild_ok"
 
 
 def extract_backfill_task(**context):
+    import pandas as pd
+
+    from aqi_config.settings import Settings
+    from src.cities import get_city_names
+    from src.extract.aqi_extractor import extract_backfill
+    from src.load.csv import save_raw_backfill
+    from src.transform.quality.dataframe_cleaner import DataFrameCleaner
+    from src.transform.transformer.aqi import transform_hourly_aqi
+
     end_date = datetime.now()
     start_date = end_date - timedelta(days=365)
     for city in get_city_names():
@@ -50,6 +59,14 @@ def extract_backfill_task(**context):
 
 
 def load_to_warehouse(**context):
+    import pandas as pd
+
+    from aqi_config.settings import Settings
+    from src.cities import load_cities
+    from src.load.postgres import PostgresLoader
+    from src.transform.transformer.aqi import build_fact_aqi
+    from src.transform.transformer.dim_date import build_dim_date
+
     dim_city = load_cities()
     clean_df = pd.read_csv(Settings.HOURLY_COMBINED_PATH)
     dim_date = build_dim_date(clean_df)
