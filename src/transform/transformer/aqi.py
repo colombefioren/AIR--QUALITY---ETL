@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pandas as pd
@@ -12,7 +12,7 @@ def transform_hourly_aqi(raw_list: list[dict], city_name: str) -> pd.DataFrame:
     coords = get_city_coords(city_name)
     rows = []
     for entry in raw_list:
-        dt = datetime.fromtimestamp(entry["dt"])
+        dt = datetime.fromtimestamp(entry["dt"], tz=timezone(timedelta(hours=3)))
         rows.append({
             "city_name": city_name,
             "latitude": coords["lat"],
