@@ -1,7 +1,7 @@
 [project]
 name = "air-quality-etl"
 version = "0.1.0"
-description = "Air quality data ETL using Visual Crossing API"
+description = "Air quality data ETL using OpenWeather Air Quality API"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -11,6 +11,7 @@ dependencies = [
     "pytest>=9.1.1",
     "python-dotenv>=1.2.2",
     "requests>=2.34.2",
+    "sqlalchemy>=2.0.36",
 ]
 
 [tool.pytest.ini_options]
